@@ -5,6 +5,7 @@ import {
   adminMiddleware,
   authMiddleware,
   dbMiddleware,
+  sessionMiddleware,
 } from "@/lib/middlewares";
 import { testEmailConnection } from "@/features/email/email.service";
 import { TestEmailConnectionSchema } from "@/features/email/email.schema";
@@ -51,14 +52,18 @@ export const unsubscribeByTokenFn = createServerFn({
 export const getReplyNotificationStatusFn = createServerFn({
   method: "GET",
 })
-  .middleware([authMiddleware])
+  .middleware([sessionMiddleware])
   .handler(async ({ context }) => {
+    if (!context.session) {
+      return err({ reason: "UNAUTHENTICATED" });
+    }
+
     const unsubscribed = await EmailData.isUnsubscribed(
       context.db,
       context.session.user.id,
       "reply_notification",
     );
-    return { enabled: !unsubscribed };
+    return ok({ enabled: !unsubscribed });
   });
 
 export const toggleReplyNotificationFn = createServerFn({

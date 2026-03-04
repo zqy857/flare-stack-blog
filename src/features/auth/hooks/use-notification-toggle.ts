@@ -9,18 +9,27 @@ import { EMAIL_KEYS } from "@/features/email/queries";
 export function useNotificationToggle(userId: string | undefined) {
   const queryClient = useQueryClient();
 
-  const { data: notificationStatus, isLoading } = useQuery({
+  const {
+    data: notificationStatus,
+    isLoading,
+    error: queryError,
+  } = useQuery({
     queryKey: EMAIL_KEYS.replyNotification(userId),
     queryFn: () => getReplyNotificationStatusFn(),
     enabled: !!userId,
   });
+  const currentEnabled =
+    !notificationStatus || notificationStatus.error
+      ? undefined
+      : notificationStatus.data.enabled;
 
   const mutation = useMutation({
     mutationFn: (enabled: boolean) =>
       toggleReplyNotificationFn({ data: { enabled } }),
     onSuccess: (_, enabled) => {
       queryClient.setQueryData(EMAIL_KEYS.replyNotification(userId), {
-        enabled,
+        data: { enabled },
+        error: null,
       });
       toast.success(enabled ? "已开启通知" : "已关闭通知");
     },
@@ -30,10 +39,28 @@ export function useNotificationToggle(userId: string | undefined) {
   });
 
   return {
-    enabled: notificationStatus?.enabled,
+    enabled: currentEnabled,
     isLoading,
     isPending: mutation.isPending,
-    toggle: () => mutation.mutate(!notificationStatus?.enabled),
+    toggle: () => {
+      if (isLoading) {
+        toast.message("正在获取通知状态，请稍候");
+        return;
+      }
+      if (queryError) {
+        toast.error("获取通知状态失败，请重试");
+        return;
+      }
+      if (notificationStatus?.error) {
+        toast.error("请先登录后再操作");
+        return;
+      }
+      if (currentEnabled === undefined) {
+        toast.error("通知状态异常，请刷新后重试");
+        return;
+      }
+      mutation.mutate(!currentEnabled);
+    },
   };
 }
 
