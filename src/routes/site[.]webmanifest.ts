@@ -12,14 +12,10 @@ function buildManifest(
       {
         src: site.icons.webApp192,
         sizes: "192x192",
-        type: "image/png",
-        purpose: "maskable",
       },
       {
         src: site.icons.webApp512,
         sizes: "512x512",
-        type: "image/png",
-        purpose: "maskable",
       },
     ],
     theme_color: "#ffffff",
